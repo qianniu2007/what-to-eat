@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="今天吃什么？一个帮你随机决定吃什么的小工具，再也不用纠结。">
+  <meta name="description" content="What to Eat? A simple random food picker that helps you decide what to have for your next meal.">
   <meta name="author" content="WANG Youlin">
-  <title>今天吃什么？What to Eat — 随机选择器</title>
+  <title>What to Eat? — Random Food Picker</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23e0552c'/%3E%3Cpath d='M7 17h18a9 9 0 0 1-18 0z' fill='white'/%3E%3Cpath d='M12 9c-1 1.5-1 3 0 4M17 8c-1 1.5-1 3 0 4' stroke='white' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
   <style>
     /* ===== Variables & reset ===== */
@@ -34,12 +34,11 @@
     .nav-bar { display: flex; align-items: center; gap: 10px; min-height: 64px; }
     .logo { display: flex; align-items: center; gap: 10px; font-weight:700; font-size: 18px; color: var(--ink); }
     .logo-mark { width: 34px; height: 34px; border-radius: 8px; background: var(--primary); display: grid; place-items: center; }
-    .logo .en { color: var(--muted); font-weight: 500; font-size: 14px; }
 
     /* ===== Hero / picker ===== */
     .picker { padding: 48px 0 20px; text-align: center; }
     .picker h1 { font-size: 34px; margin-bottom: 8px; }
-    .picker h1 .en { color: var(--primary); }
+    .picker h1 .hl { color: var(--primary); }
     .picker .lead { color: var(--muted); margin-bottom: 30px; }
     .result-card {
       background: var(--card); border: 1px solid var(--line); border-radius: 18px;
@@ -47,7 +46,7 @@
     }
     .result-label { font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 14px; }
     #result {
-      font-size: 46px; font-weight: 800; color: var(--primary-dark); min-height: 60px;
+      font-size: 44px; font-weight: 800; color: var(--primary-dark); min-height: 60px;
       display: grid; place-items: center; transition: transform 0.12s;
     }
     #result.rolling { transform: scale(1.06); color: var(--accent); }
@@ -62,8 +61,6 @@
     .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 6px 16px rgba(224,85,44,0.3); }
     .btn-primary:hover { background: var(--primary-dark); }
     .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-    .btn-ghost { background: #fbeee4; color: var(--primary-dark); padding: 10px 18px; font-size: 14px; }
-    .btn-ghost:hover { background: #f6e0d0; }
 
     /* ===== Options manager ===== */
     .panel {
@@ -110,7 +107,7 @@
     /* ===== Responsive ===== */
     @media (max-width: 640px) {
       .picker h1 { font-size: 27px; }
-      #result { font-size: 38px; }
+      #result { font-size: 36px; }
       .steps { grid-template-columns: 1fr; }
       .result-card { padding: 34px 18px; }
     }
@@ -128,7 +125,7 @@
             <path d="M12 9c-1 1.5-1 3 0 4M17 8c-1 1.5-1 3 0 4" stroke="#fff" stroke-width="2" stroke-linecap="round" fill="none"/>
           </svg>
         </span>
-        今天吃什么 <span class="en">What to Eat?</span>
+        What to Eat?
       </div>
     </div>
   </header>
@@ -137,18 +134,18 @@
     <!-- ===== Picker ===== -->
     <section class="picker">
       <div class="wrap">
-        <h1>纠结吃啥？<span class="en">让我帮你选！</span></h1>
-        <p class="lead">把你想吃的都加进来，点一下按钮，随机帮你决定今天这顿。</p>
+        <h1>Can't decide what to eat? <span class="hl">Let me pick for you!</span></h1>
+        <p class="lead">Add whatever you feel like eating, press the button, and get a random pick for this meal.</p>
         <div class="result-card">
-          <div class="result-label">今日推荐</div>
-          <div id="result">点击下方按钮</div>
+          <div class="result-label">Today's Pick</div>
+          <div id="result">Click the button below</div>
         </div>
         <button class="btn btn-primary" id="pick-btn" type="button">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <rect x="3" y="8" width="18" height="12" rx="3" stroke="#fff" stroke-width="2"/>
             <path d="M8 8V6a4 4 0 0 1 8 0v2" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
           </svg>
-          帮我选一个
+          Pick for me
         </button>
       </div>
     </section>
@@ -156,11 +153,11 @@
     <!-- ===== Options ===== -->
     <section class="wrap">
       <div class="panel">
-        <h2>我的菜单</h2>
-        <p class="sub">添加或删除候选美食，你的菜单会自动保存在这个浏览器里。</p>
+        <h2>My Menu</h2>
+        <p class="sub">Add or remove candidate foods. Your list is saved automatically in this browser.</p>
         <div class="add-row">
-          <input type="text" id="new-option" placeholder="输入一个美食，比如：火锅" maxlength="12">
-          <button class="btn btn-primary" id="add-btn" type="button">添加</button>
+          <input type="text" id="new-option" placeholder="Type a food, e.g. Sushi" maxlength="18">
+          <button class="btn btn-primary" id="add-btn" type="button">Add</button>
         </div>
         <div id="option-tags"></div>
       </div>
@@ -168,22 +165,22 @@
 
     <!-- ===== How to use ===== -->
     <section class="how wrap">
-      <h2>三步就能用</h2>
+      <h2>Three easy steps</h2>
       <div class="steps">
         <div class="step">
           <span class="n">1</span>
-          <strong>添加选项</strong>
-          <p>把你想吃的菜输进来，也可以直接用默认菜单。</p>
+          <strong>Add options</strong>
+          <p>Type in the foods you like, or just use the default menu.</p>
         </div>
         <div class="step">
           <span class="n">2</span>
-          <strong>点击按钮</strong>
-          <p>按一下"帮我选一个"，画面会快速滚动。</p>
+          <strong>Click the button</strong>
+          <p>Press "Pick for me" and watch the options roll.</p>
         </div>
         <div class="step">
           <span class="n">3</span>
-          <strong>开吃</strong>
-          <p>停下的那个就是今天的答案，不用再纠结啦。</p>
+          <strong>Enjoy your meal</strong>
+          <p>Wherever it stops is today's answer. No more hesitation.</p>
         </div>
       </div>
     </section>
@@ -192,15 +189,15 @@
   <!-- ===== Footer ===== -->
   <footer class="site">
     <div class="wrap foot-inner">
-      <div>今天吃什么 · What to Eat?</div>
-      <div>&copy; 2026 WANG Youlin · 纯 HTML / CSS / JavaScript 手写</div>
+      <div>What to Eat?</div>
+      <div>&copy; 2026 WANG Youlin · Hand-written with plain HTML / CSS / JavaScript</div>
     </div>
   </footer>
 
   <script>
-    // ===== 数据：默认菜单 + 本地存储 =====
-    const DEFAULT_OPTIONS = ["火锅", "麻辣烫", "黄焖鸡米饭", "兰州拉面", "蛋炒饭", "烧烤", "饺子", "螺蛳粉"];
-    const STORAGE_KEY = "what-to-eat-options";
+    // ===== Data: default menu + local storage =====
+    const DEFAULT_OPTIONS = ["Hot Pot", "Spicy Noodle Soup", "Braised Chicken Rice", "Beef Noodle Soup", "Egg Fried Rice", "BBQ Skewers", "Dumplings", "Rice Noodles"];
+    const STORAGE_KEY = "what-to-eat-options-en";
     let options = [];
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
@@ -218,13 +215,13 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(options));
     }
 
-    // ===== 渲染选项标签 =====
+    // ===== Render option tags =====
     function render() {
       tagsBox.innerHTML = "";
       if (!options.length) {
         const p = document.createElement("p");
         p.className = "empty-hint";
-        p.textContent = "菜单空了，先添加一个想吃的吧。";
+        p.textContent = "Your menu is empty. Add something you like.";
         tagsBox.appendChild(p);
         return;
       }
@@ -235,7 +232,7 @@
         label.textContent = name;
         const del = document.createElement("button");
         del.type = "button";
-        del.setAttribute("aria-label", "删除 " + name);
+        del.setAttribute("aria-label", "Remove " + name);
         del.textContent = "×";
         del.addEventListener("click", function () {
           options = options.filter(function (x) { return x !== name; });
@@ -248,12 +245,12 @@
       });
     }
 
-    // ===== 添加选项 =====
+    // ===== Add option =====
     function addOption() {
       const value = newInput.value.trim();
       if (!value) { newInput.focus(); return; }
       if (options.indexOf(value) !== -1) {
-        resultEl.textContent = "菜单里已经有「" + value + "」啦";
+        resultEl.textContent = "\"" + value + "\" is already on your list.";
         resultEl.className = "";
         newInput.value = "";
         return;
@@ -269,12 +266,12 @@
       if (e.key === "Enter") addOption();
     });
 
-    // ===== 随机选择（带滚动动画） =====
+    // ===== Random pick with a rolling animation =====
     let rolling = false;
     pickBtn.addEventListener("click", function () {
       if (rolling) return;
       if (!options.length) {
-        resultEl.textContent = "先添加选项哦";
+        resultEl.textContent = "Add an option first.";
         resultEl.className = "";
         return;
       }
