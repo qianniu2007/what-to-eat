@@ -89,6 +89,12 @@
     }
     .tag button:hover { background: var(--primary); color: #fff; }
     .empty-hint { color: var(--muted); font-size: 14.5px; }
+    .reset-btn {
+      margin-top: 20px; padding: 9px 18px; border-radius: 999px; cursor: pointer;
+      border: 1px solid var(--line); background: #fbeee4; color: var(--primary-dark);
+      font-family: inherit; font-size: 14px; font-weight: 700;
+    }
+    .reset-btn:hover { background: #f6e0d0; }
 
     /* ===== How to use ===== */
     .how { padding: 26px 0 40px; }
@@ -160,6 +166,7 @@
           <button class="btn btn-primary" id="add-btn" type="button">Add</button>
         </div>
         <div id="option-tags"></div>
+        <button class="reset-btn" id="reset-menu" type="button">Reset to default menu</button>
       </div>
     </section>
 
@@ -264,6 +271,15 @@
     document.getElementById("add-btn").addEventListener("click", addOption);
     newInput.addEventListener("keydown", function (e) {
       if (e.key === "Enter") addOption();
+    });
+
+    // ===== Reset back to the default menu =====
+    document.getElementById("reset-menu").addEventListener("click", function () {
+      options = DEFAULT_OPTIONS.slice();
+      save();
+      render();
+      resultEl.textContent = "Menu reset to default";
+      resultEl.className = "";
     });
 
     // ===== Random pick with a rolling animation =====
