@@ -161,6 +161,7 @@
       <div class="panel">
         <h2>My Menu</h2>
         <p class="sub">Add or remove candidate foods. Your list is saved automatically in this browser.</p>
+        <p class="sub" id="option-count"></p>
         <div class="add-row">
           <input type="text" id="new-option" placeholder="Type a food, e.g. Sushi" maxlength="18">
           <button class="btn btn-primary" id="add-btn" type="button">Add</button>
@@ -225,6 +226,8 @@
     // ===== Render option tags =====
     function render() {
       tagsBox.innerHTML = "";
+      document.getElementById("option-count").textContent =
+        options.length + (options.length === 1 ? " option on your menu" : " options on your menu");
       if (!options.length) {
         const p = document.createElement("p");
         p.className = "empty-hint";
