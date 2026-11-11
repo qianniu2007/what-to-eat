@@ -13,14 +13,23 @@
       --primary: #e0552c;
       --primary-dark: #c2411f;
       --accent: #f59e0b;
+      --accent-text: #b45309;
       --bg: #fdf6ef;
       --card: #ffffff;
       --ink: #3a2a20;
-      --muted: #8a7364;
+      --muted: #75604f;
       --line: #f0e2d4;
       --shadow: 0 6px 22px rgba(194, 65, 31, 0.10);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #result.picked { animation: none; }
+      .btn, #result { transition: none; }
+    }
     body {
       font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
       color: var(--ink); background: var(--bg); line-height: 1.7; font-size: 16px;
@@ -49,7 +58,7 @@
       font-size: 44px; font-weight: 800; color: var(--primary-dark); min-height: 60px;
       display: grid; place-items: center; transition: transform 0.12s;
     }
-    #result.rolling { transform: scale(1.06); color: var(--accent); }
+    #result.rolling { transform: scale(1.06); color: var(--accent-text); }
     #result.picked { animation: pop 0.4s ease; }
     @keyframes pop { 0% { transform: scale(0.8); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
     .btn {
@@ -101,7 +110,7 @@
     .how h2 { font-size: 21px; margin-bottom: 18px; text-align: center; }
     .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
     .step { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 22px 18px; text-align: center; }
-    .step .n { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color:#fff; font-weight: 800; display: grid; place-items: center; margin: 0 auto 12px; }
+    .step .n { width: 34px; height: 34px; border-radius: 50%; background: var(--primary-dark); color:#fff; font-weight: 800; display: grid; place-items: center; margin: 0 auto 12px; }
     .step p { font-size: 14.5px; color: var(--muted); }
     .step strong { display: block; margin-bottom: 4px; color: var(--ink); }
 
@@ -143,9 +152,10 @@
         <h1>Can't decide what to eat? <span class="hl">Let me pick for you!</span></h1>
         <p class="lead">Add whatever you feel like eating, press the button, and get a random pick for this meal.</p>
         <div class="result-card">
-          <div class="result-label">Today's Pick</div>
-          <div id="result">Click the button below</div>
+          <div class="result-label" id="result-label">Today's Pick</div>
+          <div id="result" aria-labelledby="result-label">Click the button below</div>
         </div>
+        <p class="sr-only" id="sr-status" role="status" aria-live="polite"></p>
         <button class="btn btn-primary" id="pick-btn" type="button">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <rect x="3" y="8" width="18" height="12" rx="3" stroke="#fff" stroke-width="2"/>
@@ -161,12 +171,13 @@
       <div class="panel">
         <h2>My Menu</h2>
         <p class="sub">Add or remove candidate foods. Your list is saved automatically in this browser.</p>
-        <p class="sub" id="option-count"></p>
-        <div class="add-row">
-          <input type="text" id="new-option" placeholder="Type a food, e.g. Sushi" maxlength="18">
-          <button class="btn btn-primary" id="add-btn" type="button">Add</button>
-        </div>
-        <div id="option-tags"></div>
+        <p class="sub" id="option-count" aria-live="polite"></p>
+        <form class="add-row" id="add-form">
+          <label class="sr-only" for="new-option">Food name</label>
+          <input type="text" id="new-option" name="new-option" placeholder="Type a food, e.g. Sushi" maxlength="18" autocomplete="off">
+          <button class="btn btn-primary" type="submit" id="add-btn">Add</button>
+        </form>
+        <div id="option-tags" role="list"></div>
         <button class="reset-btn" id="reset-menu" type="button">Reset to default menu</button>
       </div>
     </section>
@@ -209,7 +220,10 @@
     let options = [];
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      options = Array.isArray(saved) && saved.length ? saved : DEFAULT_OPTIONS.slice();
+      // A saved but empty list is a real state (the user cleared the menu), so keep it.
+      options = Array.isArray(saved)
+        ? saved.filter(function (x) { return typeof x === "string" && x.trim(); })
+        : DEFAULT_OPTIONS.slice();
     } catch (e) {
       options = DEFAULT_OPTIONS.slice();
     }
@@ -218,15 +232,30 @@
     const resultEl = document.getElementById("result");
     const pickBtn = document.getElementById("pick-btn");
     const newInput = document.getElementById("new-option");
+    const countEl = document.getElementById("option-count");
+    const addForm = document.getElementById("add-form");
+    const srStatus = document.getElementById("sr-status");
 
     function save() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(options));
+      // Storage can throw (private mode, blocked cookies, full quota). The menu still works for this session.
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(options));
+      } catch (e) { /* ignore: keep the in-memory menu usable */ }
+    }
+
+    function announce(message) {
+      srStatus.textContent = message;
     }
 
     // ===== Render option tags =====
     function render() {
+      // Remember which "remove" button had focus so it can be restored after the rebuild.
+      const active = document.activeElement;
+      const buttonsBefore = Array.prototype.slice.call(tagsBox.querySelectorAll(".remove-btn"));
+      const focusIndex = buttonsBefore.indexOf(active);
+
       tagsBox.innerHTML = "";
-      document.getElementById("option-count").textContent =
+      countEl.textContent =
         options.length + (options.length === 1 ? " option on your menu" : " options on your menu");
       if (!options.length) {
         const p = document.createElement("p");
@@ -235,82 +264,135 @@
         tagsBox.appendChild(p);
         return;
       }
-      options.forEach(function (name) {
+      options.forEach(function (name, index) {
         const tag = document.createElement("span");
         tag.className = "tag";
+        tag.setAttribute("role", "listitem");
         const label = document.createElement("span");
         label.textContent = name;
         const del = document.createElement("button");
         del.type = "button";
+        del.className = "remove-btn";
         del.setAttribute("aria-label", "Remove " + name);
         del.textContent = "×";
         del.addEventListener("click", function () {
-          options = options.filter(function (x) { return x !== name; });
+          options.splice(index, 1);
           save();
           render();
+          announce(name + " removed. " + options.length +
+            (options.length === 1 ? " option left." : " options left."));
         });
         tag.appendChild(label);
         tag.appendChild(del);
         tagsBox.appendChild(tag);
       });
+
+      if (focusIndex > -1) {
+        const buttonsAfter = tagsBox.querySelectorAll(".remove-btn");
+        if (buttonsAfter.length) {
+          buttonsAfter[Math.min(focusIndex, buttonsAfter.length - 1)].focus();
+        } else {
+          newInput.focus();
+        }
+      }
+    }
+
+    // ===== Hint shown in the result area =====
+    function showHint(text) {
+      stopRolling();
+      resultEl.textContent = text;
+      resultEl.classList.remove("rolling", "picked");
+      announce(text);
     }
 
     // ===== Add option =====
     function addOption() {
       const value = newInput.value.trim();
       if (!value) { newInput.focus(); return; }
-      if (options.indexOf(value) !== -1) {
-        resultEl.textContent = "\"" + value + "\" is already on your list.";
-        resultEl.className = "";
+      const exists = options.some(function (x) {
+        return x.toLowerCase() === value.toLowerCase();
+      });
+      if (exists) {
         newInput.value = "";
+        showHint("\"" + value + "\" is already on your list.");
         return;
       }
+      stopRolling();
       options.push(value);
       save();
       render();
       newInput.value = "";
       newInput.focus();
+      announce(value + " added. " + options.length +
+        (options.length === 1 ? " option on your menu." : " options on your menu."));
     }
-    document.getElementById("add-btn").addEventListener("click", addOption);
-    newInput.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") addOption();
+    addForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      addOption();
     });
 
     // ===== Reset back to the default menu =====
     document.getElementById("reset-menu").addEventListener("click", function () {
+      stopRolling();
       options = DEFAULT_OPTIONS.slice();
       save();
       render();
       resultEl.textContent = "Menu reset to default";
-      resultEl.className = "";
+      resultEl.classList.remove("rolling", "picked");
+      announce("Menu reset to the default list.");
     });
 
     // ===== Random pick with a rolling animation =====
     let rolling = false;
+    let rollTimer = null;
+
+    function stopRolling() {
+      if (!rolling) return;
+      clearInterval(rollTimer);
+      rollTimer = null;
+      rolling = false;
+      pickBtn.disabled = false;
+      pickBtn.removeAttribute("aria-busy");
+      resultEl.classList.remove("rolling");
+    }
+
     pickBtn.addEventListener("click", function () {
       if (rolling) return;
-      if (!options.length) {
-        resultEl.textContent = "Add an option first.";
-        resultEl.className = "";
+      if (!options.length) { showHint("Add an option first."); return; }
+
+      const reduce = window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const picked = options[Math.floor(Math.random() * options.length)];
+
+      if (reduce) {
+        resultEl.textContent = picked;
+        resultEl.classList.remove("rolling");
+        resultEl.classList.add("picked");
+        announce("Today's pick: " + picked);
         return;
       }
+
       rolling = true;
       pickBtn.disabled = true;
+      pickBtn.setAttribute("aria-busy", "true");
       resultEl.classList.add("rolling");
       resultEl.classList.remove("picked");
       let ticks = 0;
       const totalTicks = 14;
-      const timer = setInterval(function () {
+      rollTimer = setInterval(function () {
         resultEl.textContent = options[Math.floor(Math.random() * options.length)];
         ticks++;
         if (ticks >= totalTicks) {
-          clearInterval(timer);
+          clearInterval(rollTimer);
+          rollTimer = null;
           const final = options[Math.floor(Math.random() * options.length)];
           resultEl.textContent = final;
           resultEl.classList.remove("rolling");
           resultEl.classList.add("picked");
           rolling = false;
           pickBtn.disabled = false;
+          pickBtn.removeAttribute("aria-busy");
+          announce("Today's pick: " + final);
         }
       }, 90);
     });
